@@ -12,6 +12,10 @@ import {
 } from '@mantine/core';
 import { useState, useRef, useEffect } from 'react';
 import { MoonStars, Sun, Trash } from 'tabler-icons-react';
+import Docxtemplater from 'docxtemplater';
+import PizZip from 'pizzip';
+import PizZipUtils from 'pizzip/utils/index.js';
+import { saveAs } from 'file-saver';
 
 import {
 	MantineProvider,
@@ -55,6 +59,7 @@ export default function App() {
 				summary: taskSummary.current.value,
 			},
 		]);
+		
 	}
 
 	function deleteTask(index) {
@@ -79,6 +84,33 @@ export default function App() {
 
 	function saveTasks(tasks) {
 		localStorage.setItem('tasks', JSON.stringify(tasks));
+	}
+
+	function exportTasks(tasks) {
+		
+		PizZipUtils.getBinaryContent(
+			"/todo_react_app/tag-example.docx",
+			function (error, content) {
+				if (error) {
+					throw error;
+				}
+				var zip = new PizZip(content);
+				var doc = new Docxtemplater(zip, {
+					paragraphLoop: true,
+					linebreaks: true,
+				});
+				doc.setData({
+					tasks: tasks
+				});
+				doc.render();
+				var out = doc.getZip().generate({
+				type: 'blob',
+				mimeType:
+					'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+				});
+				saveAs(out, 'ToDoList.docx');
+			}
+		  );
 	}
 
 	useEffect(() => {
@@ -190,6 +222,15 @@ export default function App() {
 							fullWidth
 							mt={'md'}>
 							New Task
+						</Button>
+						<Button
+							onClick={() => {
+								exportTasks(tasks);
+							}}
+							fullWidth
+							disabled = { tasks.length == 0 ? true : false }
+							mt={'md'}>
+							Export to docx file
 						</Button>
 					</Container>
 				</div>
